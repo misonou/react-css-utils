@@ -21,7 +21,7 @@ const DIR_SIGN = {
 };
 
 export function cssFromPoint(x, y, origin, parent) {
-    var refRect = getRect(is(parent || origin, Node) || window);
+    var refRect = getRect(is(parent || origin, Node) || dom.root);
     var dirX = matchWord(origin || y, 'left right');
     var dirY = matchWord(origin || y, 'top bottom');
     var style = {};
