@@ -216,6 +216,7 @@ export function initStickable(container) {
     let elements = createAutoCleanupMap();
     let offsets = { top: 0, left: 0, right: 0, bottom: 0 };
     let scrolling = false;
+    let disposed = false;
 
     function getOffset(r0) {
         const left = $(container).scrollable('scrollLeft');
@@ -268,18 +269,21 @@ export function initStickable(container) {
         attributes: true,
         characterData: true
     }, function () {
-        if (!scrolling) {
+        if (!scrolling && !disposed) {
             updatePositions();
         }
     });
 
     return {
         add: function (element, dir, within) {
-            elements.set(element, { within, dir, offset: 0, maxOffset: 0 });
-            setImmediateOnce(updatePositions);
+            if (!disposed) {
+                elements.set(element, { within, dir, offset: 0, maxOffset: 0 });
+                setImmediateOnce(updatePositions);
+            }
         },
         dispose: combineFn(
             function () {
+                disposed = true;
                 elements.clear();
             },
             dom.on('resize', function () {
