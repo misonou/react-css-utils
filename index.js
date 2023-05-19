@@ -67,7 +67,7 @@ export function position(element, to, dir, within, offset) {
                 style.transform += ' ' + sTransform;
             }
             point[p] = dir ? winRect[dir] : center + margin[p];
-            return dir || p;
+            return dir;
         }
         // determine cases of 'normal', 'flip' and 'fit' by available rooms
         var rDir = inset ? FLIP_POS[dir] : dir;
@@ -94,7 +94,7 @@ export function position(element, to, dir, within, offset) {
     });
     var dirX = fn(oDirX, FLIP_POS[oDirY] && inset === 'inset-x', 'left', 'width', 'maxWidth', 'translateX(-50%)');
     var dirY = fn(oDirY, FLIP_POS[oDirX] && inset === 'inset-y', 'top', 'height', 'maxHeight', 'translateY(-50%)');
-    $(element).css(extend(style, cssFromPoint(point, dirX + ' ' + dirY)));
+    $(element).css(extend(style, cssFromPoint(point, (dirX || 'left') + ' ' + (dirY || 'top')))).attr('position-anchor', (dirX || 'center-x') + ' ' + (dirY || 'center-y'));
 }
 
 export function useAnimatedIndicator(options) {
