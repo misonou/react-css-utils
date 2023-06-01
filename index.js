@@ -105,8 +105,8 @@ export function position(element, to, dir, within, offset) {
     keys(FLIP_POS).forEach(function (v) {
         margin[v] = elmRect[v] - elmRectNoMargin[v];
     });
-    var dirX = fn(oDirX, FLIP_POS[oDirY] && inset === 'inset-x', 'left', 'width', 'maxWidth', 'translateX(-50%)');
-    var dirY = fn(oDirY, FLIP_POS[oDirX] && inset === 'inset-y', 'top', 'height', 'maxHeight', 'translateY(-50%)');
+    var dirX = fn(oDirX, inset === 'inset' || (FLIP_POS[oDirY] && inset === 'inset-x'), 'left', 'width', 'maxWidth', 'translateX(-50%)');
+    var dirY = fn(oDirY, inset === 'inset' || (FLIP_POS[oDirX] && inset === 'inset-y'), 'top', 'height', 'maxHeight', 'translateY(-50%)');
     $(element).css(extend(style, cssFromPoint(point, (dirX || 'left') + ' ' + (dirY || 'top')))).attr('position-anchor', (dirX || 'center-x') + ' ' + (dirY || 'center-y'));
 }
 
