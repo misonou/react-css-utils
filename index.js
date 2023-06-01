@@ -1,7 +1,7 @@
 import { useState } from "react";
 import $ from "jquery";
 import dom from "zeta-dom/dom";
-import { containsOrEquals, getRect, removeNode, setClass, toPlainRect } from "zeta-dom/domUtil";
+import { containsOrEquals, getRect, rectIntersects, removeNode, setClass, toPlainRect } from "zeta-dom/domUtil";
 import { always, combineFn, each, extend, is, isPlainObject, keys, makeArray, matchWord, randomId, setImmediate, setImmediateOnce, setTimeout } from "zeta-dom/util";
 import { useDispose } from "zeta-dom-react";
 import { createAutoCleanupMap, observe } from "zeta-dom/observe";
@@ -21,6 +21,24 @@ const DIR_SIGN = {
 };
 const safeAreaInset = {};
 
+function getVisibleWinRect() {
+    if (!('left' in safeAreaInset)) {
+        var property = '--' + randomId();
+        var $stylesheet = $('<style>:root{' + property + ':env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}</style>').appendTo('head');
+        var cur = getComputedStyle(dom.root).getPropertyValue(property).split(' ');
+        extend(safeAreaInset, {
+            top: -parseFloat(cur[0]) || 0,
+            left: -parseFloat(cur[3]) || 0,
+            right: -parseFloat(cur[1]) || 0,
+            bottom: -parseFloat(cur[2]) || 0
+        });
+        $stylesheet.remove();
+    }
+    return rectIntersects(
+        getRect(dom.root),
+        getRect().expand(safeAreaInset.left, safeAreaInset.top, safeAreaInset.right, safeAreaInset.bottom));
+}
+
 export function cssFromPoint(x, y, origin, parent) {
     var refRect = getRect(is(parent || origin, Node) || dom.root);
     var dirX = matchWord(origin || y, 'left right');
@@ -39,18 +57,6 @@ export function position(element, to, dir, within, offset) {
     if (!containsOrEquals(dom.root, element)) {
         document.body.appendChild(element);
     }
-    if (!('left' in safeAreaInset)) {
-        var property = '--' + randomId();
-        var $stylesheet = $('<style>:root{' + property + ':env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}</style>').appendTo('head');
-        var cur = getComputedStyle(dom.root).getPropertyValue(property).split(' ');
-        extend(safeAreaInset, {
-            top: -parseFloat(cur[0]) || 0,
-            left: -parseFloat(cur[3]) || 0,
-            right: -parseFloat(cur[1]) || 0,
-            bottom: -parseFloat(cur[2]) || 0
-        });
-        $stylesheet.remove();
-    }
     $(element).css({
         position: 'fixed',
         maxWidth: '',
@@ -64,7 +70,7 @@ export function position(element, to, dir, within, offset) {
     if (offset && inset !== 'inset') {
         refRect = inset === 'inset-x' ? refRect.expand(0, offset) : refRect.expand(offset, 0);
     }
-    var winRect = inset === 'inset' ? refRect.expand(-offset) : within ? getRect(within) : getRect().expand(safeAreaInset.left, safeAreaInset.top, safeAreaInset.right, safeAreaInset.bottom);
+    var winRect = inset === 'inset' ? refRect.expand(-offset) : within ? getRect(within) : getVisibleWinRect();
     var elmRect = getRect(element, true);
     var margin = {};
     var point = {};
