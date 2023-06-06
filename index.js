@@ -68,8 +68,9 @@ export function position(element, to, dir, within, offset) {
     if (!containsOrEquals(dom.root, element)) {
         document.body.appendChild(element);
     }
+    var isAbsolute = $(element).css('position') === 'absolute';
     $(element).css({
-        position: 'fixed',
+        position: isAbsolute ? 'absolute' : 'fixed',
         maxWidth: '',
         maxHeight: ''
     });
@@ -124,7 +125,8 @@ export function position(element, to, dir, within, offset) {
     });
     var dirX = fn(oDirX, inset === 'inset' || (FLIP_POS[oDirY] && inset === 'inset-x'), 'left', 'width', 'maxWidth', 'translateX(-50%)');
     var dirY = fn(oDirY, inset === 'inset' || (FLIP_POS[oDirX] && inset === 'inset-y'), 'top', 'height', 'maxHeight', 'translateY(-50%)');
-    $(element).css(extend(style, cssFromPoint(point, (dirX || 'left') + ' ' + (dirY || 'top')))).attr('position-anchor', (dirX || 'center-x') + ' ' + (dirY || 'center-y'));
+    extend(style, cssFromPoint(point, (dirX || 'left') + ' ' + (dirY || 'top'), isAbsolute ? element.offsetParent : undefined));
+    $(element).css(style).attr('position-anchor', (dirX || 'center-x') + ' ' + (dirY || 'center-y'));
 }
 
 export function useAnimatedIndicator(options) {
