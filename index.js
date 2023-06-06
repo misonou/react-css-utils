@@ -34,9 +34,14 @@ function getVisibleWinRect() {
         });
         $stylesheet.remove();
     }
-    return rectIntersects(
-        getRect(dom.root),
-        getRect().expand(safeAreaInset.left, safeAreaInset.top, safeAreaInset.right, safeAreaInset.bottom));
+    var a = getRect(dom.root);
+    var b = getRect().expand(safeAreaInset.left, safeAreaInset.top, safeAreaInset.right, safeAreaInset.bottom);
+    return toPlainRect(
+        Math.max(a.left, b.left),
+        Math.max(a.top, b.top),
+        Math.min(a.right, b.right),
+        Math.min(a.bottom, b.bottom)
+    );
 }
 
 export function cssFromPoint(x, y, origin, parent) {
