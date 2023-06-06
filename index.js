@@ -1,7 +1,7 @@
 import { useState } from "react";
 import $ from "jquery";
 import dom from "zeta-dom/dom";
-import { containsOrEquals, getRect, rectIntersects, removeNode, setClass, toPlainRect } from "zeta-dom/domUtil";
+import { containsOrEquals, getRect, removeNode, setClass, toPlainRect } from "zeta-dom/domUtil";
 import { always, combineFn, each, extend, is, isPlainObject, keys, makeArray, matchWord, randomId, setImmediate, setImmediateOnce, setTimeout } from "zeta-dom/util";
 import { useDispose } from "zeta-dom-react";
 import { createAutoCleanupMap, observe } from "zeta-dom/observe";
@@ -45,12 +45,18 @@ function getVisibleWinRect() {
 }
 
 export function cssFromPoint(x, y, origin, parent) {
-    var refRect = getRect(is(parent || origin, Node) || dom.root);
-    var dirX = matchWord(origin || y, 'left right');
-    var dirY = matchWord(origin || y, 'top bottom');
+    if (isPlainObject(x)) {
+        parent = origin;
+        origin = y;
+        y = x.top || x.clientY || x.y;
+        x = x.left || x.clientX || x.x;
+    }
+    var refRect = getRect(parent || dom.root);
+    var dirX = matchWord(origin, 'left right') || 'left';
+    var dirY = matchWord(origin, 'top bottom') || 'top';
     var style = {};
-    y = (((x.top || x.clientY || x.y || y) | 0) - refRect.top);
-    x = (((x.left || x.clientX || x.x || x) | 0) - refRect.left);
+    y = y - refRect.top;
+    x = x - refRect.left;
     style[dirX] = (dirX === 'left' ? x : refRect.width - x) + 'px';
     style[dirY] = (dirY === 'top' ? y : refRect.height - y) + 'px';
     style[FLIP_POS[dirX]] = 'auto';
