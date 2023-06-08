@@ -4,6 +4,15 @@ export function cssFromPoint(x: number, y: number, origin?: Zeta.Direction2D, pa
 
 export function position(element: Element, to: Zeta.PointLike | Zeta.RectLike | Element, dir: Zeta.Direction2D, within?: Element, offset?: number): void;
 
+export function position(element: Element, to: Zeta.PointLike | Zeta.RectLike | Element, dir: Zeta.Direction2D, options?: PositionOptions): void;
+
+export interface PositionOptions {
+    within?: Element;
+    offset?: number;
+    scrollToFit?: boolean;
+    axis?: 'x-only' | 'y-only' | 'both';
+}
+
 export interface AnimatedIndicatorOptions {
     /**
      * A CSS selector that selects the elements to which an active state indicator element will be attached to.

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import $ from "jquery";
 import dom from "zeta-dom/dom";
-import { containsOrEquals, getContentRect, getRect, removeNode, setClass, toPlainRect } from "zeta-dom/domUtil";
-import { always, combineFn, each, extend, isPlainObject, keys, makeArray, matchWord, setImmediate, setImmediateOnce, setTimeout } from "zeta-dom/util";
+import { containsOrEquals, getContentRect, getRect, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
+import { always, combineFn, each, either, extend, is, isPlainObject, keys, makeArray, matchWord, setImmediate, setImmediateOnce, setTimeout } from "zeta-dom/util";
 import { useDispose } from "zeta-dom-react";
 import { createAutoCleanupMap, observe } from "zeta-dom/observe";
 
@@ -20,6 +20,13 @@ const DIR_SIGN = {
     center: 0,
 };
 
+function setStyle(style, dir, pos, parentRect, p, pSize) {
+    dir = dir || p;
+    pos = pos - parentRect[p];
+    style[dir] = (dir === p ? pos : parentRect[pSize] - pos) + 'px';
+    style[FLIP_POS[dir]] = 'auto';
+}
+
 export function cssFromPoint(x, y, origin, parent) {
     if (isPlainObject(x)) {
         parent = origin;
@@ -28,44 +35,79 @@ export function cssFromPoint(x, y, origin, parent) {
         x = x.left || x.clientX || x.x;
     }
     var refRect = getRect(parent || dom.root);
-    var dirX = matchWord(origin, 'left right') || 'left';
-    var dirY = matchWord(origin, 'top bottom') || 'top';
     var style = {};
-    y = y - refRect.top;
-    x = x - refRect.left;
-    style[dirX] = (dirX === 'left' ? x : refRect.width - x) + 'px';
-    style[dirY] = (dirY === 'top' ? y : refRect.height - y) + 'px';
-    style[FLIP_POS[dirX]] = 'auto';
-    style[FLIP_POS[dirY]] = 'auto';
+    setStyle(style, matchWord(origin, 'left right'), x, refRect, 'left', 'width');
+    setStyle(style, matchWord(origin, 'top bottom'), y, refRect, 'top', 'height');
     return style;
 }
 
 export function position(element, to, dir, within, offset) {
+    var ignoreX, ignoreY, scrollToFit;
     if (!containsOrEquals(dom.root, element)) {
         document.body.appendChild(element);
     }
+    if (isPlainObject(within)) {
+        ignoreX = within.axis === 'y-only';
+        ignoreY = within.axis === 'x-only';
+        scrollToFit = within.scrollToFit;
+        offset = within.offset;
+        within = within.within;
+    }
+    offset = offset || 0;
+
     var isAbsolute = $(element).css('position') === 'absolute';
     $(element).css({
         position: isAbsolute ? 'absolute' : 'fixed',
+        transform: '',
         maxWidth: '',
         maxHeight: ''
     });
-    offset = offset || 0;
     var oDirX = matchWord(dir, 'left right center') || 'left';
     var oDirY = matchWord(dir, 'top bottom center') || 'bottom';
     var inset = matchWord(dir, 'inset-x inset-y inset') || (FLIP_POS[oDirY] ? 'inset-x' : 'inset-y');
+    var insetX = inset === 'inset' || (FLIP_POS[oDirY] && inset === 'inset-x');
+    var insetY = inset === 'inset' || (FLIP_POS[oDirX] && inset === 'inset-y');
+
     var refRect = isPlainObject(to) || !to ? toPlainRect((to.left || to.clientX || to.x) | 0, (to.top || to.clientY || to.y) | 0) : getRect(to);
     if (offset && inset !== 'inset') {
         refRect = inset === 'inset-x' ? refRect.expand(0, offset) : refRect.expand(offset, 0);
     }
     var winRect = inset === 'inset' ? refRect.expand(-offset) : within ? getRect(within) : getContentRect(dom.root);
+    var parentRect = isAbsolute ? getRect(element.offsetParent) : undefined;
     var elmRect = getRect(element, true);
+    var elmRectNoMargin = getRect(element);
     var margin = {};
-    var point = {};
+    keys(FLIP_POS).forEach(function (v) {
+        margin[v] = elmRect[v] - elmRectNoMargin[v];
+    });
+
+    var idealRect = {};
+    var calculateIdealPosition = function (dir, inset, current, p, pSize) {
+        if (current) {
+            idealRect[p] = elmRect[p];
+        } else if (!FLIP_POS[dir]) {
+            idealRect[p] = (refRect[FLIP_POS[p]] + refRect[p] - elmRect[pSize]) / 2;
+        } else {
+            idealRect[p] = refRect[dir] - (either(p === dir, inset) ? elmRect[pSize] : 0);
+        }
+        idealRect[FLIP_POS[p]] = idealRect[p] + elmRect[pSize];
+    };
+    if (scrollToFit && is(to, Node)) {
+        calculateIdealPosition(oDirX, insetX, ignoreX, 'left', 'width');
+        calculateIdealPosition(oDirY, insetY, ignoreY, 'top', 'height');
+        var delta = scrollIntoView(to, toPlainRect(idealRect));
+        if (delta) {
+            refRect = refRect.translate(-delta.x, -delta.y);
+            parentRect = parentRect && parentRect.translate(-delta.x, -delta.y);
+        }
+    }
+    parentRect = parentRect || getRect(dom.root);
+
     var style = {
         transform: ''
     };
-    var fn = function (dir, inset, p, pSize, pMax, sTransform) {
+    var setActualPosition = function (dir, inset, p, pSize, pMax, sTransform) {
+        var point;
         style[pMax] = winRect[pSize] + margin[p] - margin[FLIP_POS[p]] - (offset || 0);
         if (!FLIP_POS[dir]) {
             var center = (refRect[FLIP_POS[p]] + refRect[p]) / 2;
@@ -73,36 +115,33 @@ export function position(element, to, dir, within, offset) {
             if (!dir) {
                 style.transform += ' ' + sTransform;
             }
-            point[p] = dir ? winRect[dir] : center + margin[p];
+            point = dir ? winRect[dir] : center + margin[p];
+            setStyle(style, dir, point, parentRect, p, pSize);
             return dir;
         }
         // determine cases of 'normal', 'flip' and 'fit' by available rooms
         var rDir = inset ? FLIP_POS[dir] : dir;
         if (refRect[dir] * DIR_SIGN[rDir] + elmRect[pSize] <= winRect[rDir] * DIR_SIGN[rDir]) {
-            point[p] = refRect[dir] + margin[FLIP_POS[rDir]];
+            point = refRect[dir] + margin[FLIP_POS[rDir]];
         } else if (refRect[FLIP_POS[dir]] * DIR_SIGN[rDir] - elmRect[pSize] > winRect[FLIP_POS[rDir]] * DIR_SIGN[rDir]) {
             dir = FLIP_POS[dir];
-            point[p] = refRect[dir] + margin[rDir];
+            point = refRect[dir] + margin[rDir];
         } else {
-            point[p] = winRect[dir];
-            style[pMax] = inset ? style[pMax] : Math.abs(refRect[dir] - point[p]) - (DIR_SIGN[dir] * margin[dir]);
+            point = winRect[dir];
+            style[pMax] = inset ? style[pMax] : Math.abs(refRect[dir] - point) - (DIR_SIGN[dir] * margin[dir]);
+            setStyle(style, dir, point, parentRect, p, pSize);
             return dir;
         }
         if (!inset) {
             dir = FLIP_POS[dir];
         }
-        style[pMax] = Math.abs(winRect[FLIP_POS[dir]] - point[p]);
+        style[pMax] = Math.abs(winRect[FLIP_POS[dir]] - point);
+        setStyle(style, dir, point, parentRect, p, pSize);
         return dir;
     };
-
-    var elmRectNoMargin = getRect(element);
-    keys(FLIP_POS).forEach(function (v) {
-        margin[v] = elmRect[v] - elmRectNoMargin[v];
-    });
-    var dirX = fn(oDirX, inset === 'inset' || (FLIP_POS[oDirY] && inset === 'inset-x'), 'left', 'width', 'maxWidth', 'translateX(-50%)');
-    var dirY = fn(oDirY, inset === 'inset' || (FLIP_POS[oDirX] && inset === 'inset-y'), 'top', 'height', 'maxHeight', 'translateY(-50%)');
-    extend(style, cssFromPoint(point, (dirX || 'left') + ' ' + (dirY || 'top'), isAbsolute ? element.offsetParent : undefined));
-    $(element).css(style).attr('position-anchor', (dirX || 'center-x') + ' ' + (dirY || 'center-y'));
+    var dirX = ignoreX ? 'preserve-x' : setActualPosition(oDirX, insetX, 'left', 'width', 'maxWidth', 'translateX(-50%)') || 'center-x';
+    var dirY = ignoreY ? 'preserve-y' : setActualPosition(oDirY, insetY, 'top', 'height', 'maxHeight', 'translateY(-50%)') || 'center-y';
+    $(element).css(style).attr('position-anchor', dirX + ' ' + dirY);
 }
 
 export function useAnimatedIndicator(options) {
