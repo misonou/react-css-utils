@@ -1,8 +1,8 @@
 import { useState } from "react";
 import $ from "jquery";
 import dom from "zeta-dom/dom";
-import { containsOrEquals, getRect, removeNode, setClass, toPlainRect } from "zeta-dom/domUtil";
-import { always, combineFn, each, extend, is, isPlainObject, keys, makeArray, matchWord, randomId, setImmediate, setImmediateOnce, setTimeout } from "zeta-dom/util";
+import { containsOrEquals, getContentRect, getRect, removeNode, setClass, toPlainRect } from "zeta-dom/domUtil";
+import { always, combineFn, each, extend, isPlainObject, keys, makeArray, matchWord, setImmediate, setImmediateOnce, setTimeout } from "zeta-dom/util";
 import { useDispose } from "zeta-dom-react";
 import { createAutoCleanupMap, observe } from "zeta-dom/observe";
 
@@ -19,30 +19,6 @@ const DIR_SIGN = {
     bottom: 1,
     center: 0,
 };
-const safeAreaInset = {};
-
-function getVisibleWinRect() {
-    if (!('left' in safeAreaInset)) {
-        var property = '--' + randomId();
-        var $stylesheet = $('<style>:root{' + property + ':env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}</style>').appendTo('head');
-        var cur = getComputedStyle(dom.root).getPropertyValue(property).split(' ');
-        extend(safeAreaInset, {
-            top: -parseFloat(cur[0]) || 0,
-            left: -parseFloat(cur[3]) || 0,
-            right: -parseFloat(cur[1]) || 0,
-            bottom: -parseFloat(cur[2]) || 0
-        });
-        $stylesheet.remove();
-    }
-    var a = getRect(dom.root);
-    var b = getRect().expand(safeAreaInset.left, safeAreaInset.top, safeAreaInset.right, safeAreaInset.bottom);
-    return toPlainRect(
-        Math.max(a.left, b.left),
-        Math.max(a.top, b.top),
-        Math.min(a.right, b.right),
-        Math.min(a.bottom, b.bottom)
-    );
-}
 
 export function cssFromPoint(x, y, origin, parent) {
     if (isPlainObject(x)) {
@@ -82,7 +58,7 @@ export function position(element, to, dir, within, offset) {
     if (offset && inset !== 'inset') {
         refRect = inset === 'inset-x' ? refRect.expand(0, offset) : refRect.expand(offset, 0);
     }
-    var winRect = inset === 'inset' ? refRect.expand(-offset) : within ? getRect(within) : getVisibleWinRect();
+    var winRect = inset === 'inset' ? refRect.expand(-offset) : within ? getRect(within) : getContentRect(dom.root);
     var elmRect = getRect(element, true);
     var margin = {};
     var point = {};

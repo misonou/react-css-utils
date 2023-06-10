@@ -9,7 +9,7 @@
   "repository": "github:misonou/react-css-utils",
   "dependencies": {
     "jquery": "^3.5.0",
-    "zeta-dom": ">=0.2.9",
+    "zeta-dom": ">=0.3.14",
     "zeta-dom-react": ">=0.3.1"
   },
   "peerDependencies": {
