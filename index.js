@@ -85,7 +85,7 @@ export function position(element, to, dir, within, offset) {
         winMargin[v] = Math.max(margin[v], winInset);
     });
 
-    var idealRect = {};
+    var idealRect = toPlainRect(0, 0, 0, 0);
     var calculateIdealPosition = function (dir, inset, current, p, pSize) {
         var q = FLIP_POS[p];
         var size = elmRectWinMargin[pSize];
@@ -98,12 +98,13 @@ export function position(element, to, dir, within, offset) {
         }
         idealRect[q] = idealRect[p] + size;
     };
+    calculateIdealPosition(oDirX, insetX, ignoreX, 'left', 'width');
+    calculateIdealPosition(oDirY, insetY, ignoreY, 'top', 'height');
     if (scrollToFit && is(to, Node)) {
-        calculateIdealPosition(oDirX, insetX, ignoreX, 'left', 'width');
-        calculateIdealPosition(oDirY, insetY, ignoreY, 'top', 'height');
-        var delta = scrollIntoView(to, toPlainRect(idealRect));
+        var delta = scrollIntoView(to, idealRect);
         if (delta) {
             refRect = refRect.translate(-delta.x, -delta.y);
+            idealRect = idealRect.translate(-delta.x, -delta.y);
             parentRect = parentRect && parentRect.translate(-delta.x, -delta.y);
         }
     }
@@ -112,8 +113,12 @@ export function position(element, to, dir, within, offset) {
     var style = {
         transform: ''
     };
-    var setActualPosition = function (dir, inset, p, pSize, pMax, sTransform) {
+    var setActualPosition = function (dir, inset, preserve, axis, p, pSize, pMax, sTransform) {
         var q = FLIP_POS[p];
+        if (preserve) {
+            style[pMax] = (Math.min(winRect[q], idealRect[q]) - Math.max(winRect[p], idealRect[p])) + 'px';
+            return 'preserve-' + axis;
+        }
         var size = elmRectNoMargin[pSize];
         var point;
         style[pMax] = winRect[pSize] - winMargin[p] - winMargin[q] - (offset || 0);
@@ -129,7 +134,7 @@ export function position(element, to, dir, within, offset) {
             }
             point = dir ? winRect[dir] - (winMargin[dir] - margin[dir]) * DIR_SIGN[dir] : center - margin[p];
             setStyle(style, dir, point, parentRect, p, pSize);
-            return dir;
+            return dir || 'center' + axis;
         }
         // determine cases of 'normal', 'flip' and 'fit' by available rooms
         var rDir = inset ? FLIP_POS[dir] : dir;
@@ -152,8 +157,8 @@ export function position(element, to, dir, within, offset) {
         setStyle(style, dir, point, parentRect, p, pSize);
         return dir;
     };
-    var dirX = ignoreX ? 'preserve-x' : setActualPosition(oDirX, insetX, 'left', 'width', 'maxWidth', 'translateX(-50%)') || 'center-x';
-    var dirY = ignoreY ? 'preserve-y' : setActualPosition(oDirY, insetY, 'top', 'height', 'maxHeight', 'translateY(-50%)') || 'center-y';
+    var dirX = setActualPosition(oDirX, insetX, ignoreX, 'x', 'left', 'width', 'maxWidth', 'translateX(-50%)');
+    var dirY = setActualPosition(oDirY, insetY, ignoreY, 'y', 'top', 'height', 'maxHeight', 'translateY(-50%)');
     $(element).css(style).attr('position-anchor', dirX + ' ' + dirY);
 }
 
