@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "target": "es2015",
+        "lib": ["dom", "es2015", "es2017.object"],
+        "moduleResolution": "node",
+        "checkJs": true,
+        "strict": true,
+        "noImplicitAny": false,
+        "noImplicitThis": false,
+        "noImplicitReturns": false,
+        "baseUrl": ".",
+        "paths": {
+            "src/*": ["./src/*"],
+            "zeta-dom/*": ["../zeta-dom/src/*", "node_modules/zeta-dom/*"],
+            "zeta-dom-react": ["../zeta-dom-react/src/index", "node_modules/zeta-dom-react/index"],
+            "brew-js/*": ["../brew-js/src/*", "node_modules/brew-js/*"],
+            "brew-js-react": ["../brew-js-react/src/index", "node_modules/brew-js-react/index"],
+        }
+    },
+    "exclude": ["build", "node_modules"]
+}
