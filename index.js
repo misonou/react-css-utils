@@ -74,7 +74,7 @@ export function position(element, to, dir, within, offset) {
     }
     var winInset = inset === 'inset' || within ? 0 : 10;
     var winRect = inset === 'inset' ? refRect.expand(-offset) : within ? getRect(within) : getContentRect(dom.root);
-    var parentRect = isAbsolute ? getRect(element.offsetParent) : undefined;
+    var parentRect = isAbsolute ? getRect(element.offsetParent, 'padding-box') : undefined;
     var elmRect = getRect(element, true);
     var elmRectNoMargin = getRect(element);
     var elmRectWinMargin = winInset ? mergeRect(elmRectNoMargin.expand(10), elmRect) : elmRect;
