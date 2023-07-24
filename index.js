@@ -75,13 +75,13 @@ export function position(element, to, dir, within, offset) {
     var winInset = inset === 'inset' || within ? 0 : 10;
     var winRect = inset === 'inset' ? refRect.expand(-offset) : within ? getRect(within) : getContentRect(dom.root);
     var parentRect = isAbsolute ? getRect(element.offsetParent, 'padding-box') : undefined;
-    var elmRect = getRect(element, true);
+    var elmRect = getRect(element, 'margin-box');
     var elmRectNoMargin = getRect(element);
     var elmRectWinMargin = winInset ? mergeRect(elmRectNoMargin.expand(10), elmRect) : elmRect;
     var margin = {};
     var winMargin = {};
     keys(FLIP_POS).forEach(function (v) {
-        margin[v] = Math.abs(elmRect[v] - elmRectNoMargin[v]);
+        margin[v] = Math.max(0, (elmRect[v] - elmRectNoMargin[v]) * DIR_SIGN[v]);
         winMargin[v] = Math.max(margin[v], winInset);
     });
 
@@ -119,7 +119,7 @@ export function position(element, to, dir, within, offset) {
             style[pMax] = (Math.min(winRect[q], idealRect[q]) - Math.max(winRect[p], idealRect[p])) + 'px';
             return 'preserve-' + axis;
         }
-        var size = elmRectNoMargin[pSize];
+        var size = elmRect[pSize];
         var point;
         style[pMax] = winRect[pSize] - winMargin[p] - winMargin[q] - (offset || 0);
         if (!FLIP_POS[dir]) {
