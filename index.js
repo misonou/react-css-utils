@@ -104,7 +104,7 @@ export function position(element, to, dir, within, offset) {
             idealRect = toPlainRect(0, 0, 0, 0);
             calculateIdealPosition(oDirX, insetX, modeX, 'left', 'width');
             calculateIdealPosition(oDirY, insetY, modeY, 'top', 'height');
-            
+
             var delta = scrollIntoView(to, idealRect);
             if (delta) {
                 refRect = refRect.translate(-delta.x, -delta.y);
@@ -163,7 +163,6 @@ export function position(element, to, dir, within, offset) {
                     return;
                 }
                 point = winRect[dir];
-                style[pMax] = inset ? style[pMax] : Math.abs(refRect[dir] - point) - winMargin[dir];
                 setStyle(style, dir, point, parentRect, p, pSize);
                 return dir;
             }
