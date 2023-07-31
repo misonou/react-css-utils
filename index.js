@@ -105,7 +105,7 @@ export function position(element, to, dir, within, offset) {
             calculateIdealPosition(oDirX, insetX, modeX, 'left', 'width');
             calculateIdealPosition(oDirY, insetY, modeY, 'top', 'height');
 
-            var delta = scrollIntoView(to, idealRect);
+            var delta = scrollIntoView(to, idealRect, within);
             if (delta) {
                 refRect = refRect.translate(-delta.x, -delta.y);
                 idealRect = idealRect.translate(-delta.x, -delta.y);
