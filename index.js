@@ -64,10 +64,11 @@ export function position(element, to, dir, within, offset) {
     });
     var oDirX = matchWord(dir, 'left right center') || 'left';
     var oDirY = matchWord(dir, 'top bottom center') || 'bottom';
-    var inset = matchWord(dir, 'inset-x inset-y inset') || (FLIP_POS[oDirY] ? 'inset-x' : 'inset-y');
-    var insetX = inset === 'inset' || (FLIP_POS[oDirY] && inset === 'inset-x');
-    var insetY = inset === 'inset' || (FLIP_POS[oDirX] && inset === 'inset-y');
-    var winInset = inset === 'inset' || within ? 0 : 10;
+    var oInset = matchWord(dir, 'inset-x inset-y inset') || (FLIP_POS[oDirY] ? 'inset-x' : 'inset-y');
+    var inset = oInset === 'inset';
+    var insetX = inset || (FLIP_POS[oDirY] && oInset === 'inset-x');
+    var insetY = inset || (FLIP_POS[oDirX] && oInset === 'inset-y');
+    var winInset = inset || within ? 0 : 10;
     var elmRect = getRect(element, 'margin-box');
     var elmRectNoMargin = getRect(element);
     var elmRectWinMargin = winInset ? mergeRect(elmRectNoMargin.expand(10), elmRect) : elmRect;
@@ -82,10 +83,9 @@ export function position(element, to, dir, within, offset) {
     var calc = function (modeX, modeY, allowScroll) {
         var idealRect = elmRect;
         var refRect = isPlainObject(to) || !to ? toPlainRect((to.left || to.clientX || to.x) | 0, (to.top || to.clientY || to.y) | 0) : getRect(to);
-        if (offset && inset !== 'inset') {
-            refRect = inset === 'inset-x' ? refRect.expand(0, offset) : refRect.expand(offset, 0);
+        if (offset) {
+            refRect = inset ? refRect.expand(-offset) : insetX ? refRect.expand(0, offset) : refRect.expand(offset, 0);
         }
-        var winRect = inset === 'inset' ? refRect.expand(-offset) : within ? getRect(within) : getContentRect(dom.root);
         var parentRect = isAbsolute ? getRect(element.offsetParent, 'padding-box') : undefined;
         if (allowScroll) {
             var calculateIdealPosition = function (dir, inset, mode, p, pSize) {
@@ -114,6 +114,7 @@ export function position(element, to, dir, within, offset) {
         }
         parentRect = parentRect || getRect(dom.root);
 
+        var winRect = inset ? refRect : within ? getRect(within) : getContentRect(dom.root);
         var style = {
             transform: ''
         };
