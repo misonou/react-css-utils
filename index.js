@@ -2,9 +2,8 @@ import { useState } from "react";
 import $ from "jquery";
 import dom from "zeta-dom/dom";
 import { containsOrEquals, getContentRect, getRect, mergeRect, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
-import { always, combineFn, each, either, extend, is, isPlainObject, keys, makeArray, matchWord, setImmediate, setImmediateOnce, setTimeout } from "zeta-dom/util";
+import { always, either, extend, is, isPlainObject, keys, makeArray, matchWord, setImmediate, setTimeout } from "zeta-dom/util";
 import { useDispose } from "zeta-dom-react";
-import { createAutoCleanupMap, observe } from "zeta-dom/observe";
 
 const FLIP_POS = {
     top: 'bottom',
@@ -298,98 +297,15 @@ export function initSortable(element, options) {
 }
 
 export function initStickable(container) {
-    let elements = createAutoCleanupMap();
-    let offsets = { top: 0, left: 0, right: 0, bottom: 0 };
-    let scrolling = false;
     let disposed = false;
-
-    function getOffset(r0) {
-        const left = $(container).scrollable('scrollLeft');
-        const top = $(container).scrollable('scrollTop');
-        const r1 = getRect(container);
-        r0 = r0 || getRect(container.querySelector('[scrollable-target]'));
-        return {
-            top: top,
-            left: left,
-            right: r0.width - r1.width - left,
-            bottom: r0.height - r1.height - top,
-        };
-    }
-
-    function updatePositions(deltaX, deltaY) {
-        const updateWithin = deltaX === undefined;
-        const r0 = getRect(container);
-        if (deltaX === undefined) {
-            offsets = getOffset();
-            deltaX = 0;
-            deltaY = 0;
-        }
-        each(elements, function (element, state) {
-            let sign = state.dir === 'right' || state.dir === 'bottom' ? -1 : 1;
-            let isDirY = state.dir === 'top' || state.dir === 'bottom';
-            let offset = offsets[state.dir] * sign;
-            let delta = isDirY ? deltaY : deltaX;
-            if (state.within) {
-                if (updateWithin) {
-                    let r = state.within();
-                    offset = (r[state.dir] - r0[state.dir]) * sign;
-                    state.offset = offset;
-                    state.maxOffset = isDirY ? r.height : r.width;
-                } else {
-                    offset = state.offset;
-                }
-                let pos = (offset + delta) * sign;
-                if (pos < 0 || pos > state.maxOffset) {
-                    element.style.transform = '';
-                    return;
-                }
-            }
-            element.style.transform = 'translate' + (isDirY ? 'Y' : 'X') + '(' + ((offset + delta) | 0) + 'px)';
-        });
-    }
-
-    observe(container, {
-        subtree: true,
-        childList: true,
-        attributes: true,
-        characterData: true
-    }, function () {
-        if (!scrolling && !disposed) {
-            updatePositions();
-        }
-    });
-
     return {
         add: function (element, dir, within) {
             if (!disposed) {
-                elements.set(element, { within, dir, offset: 0, maxOffset: 0 });
-                setImmediateOnce(updatePositions);
+                $(container).scrollable('setStickyPosition', element, dir, within, true);
             }
         },
-        dispose: combineFn(
-            function () {
-                disposed = true;
-                elements.clear();
-            },
-            dom.on('resize', function () {
-                updatePositions();
-            }),
-            dom.on(container, {
-                scrollStart: function (e) {
-                    if (e.target === container) {
-                        scrolling = true;
-                    }
-                },
-                scrollMove: function (e) {
-                    if (scrolling) {
-                        updatePositions((e.offsetX | 0) - e.startX, (e.offsetY | 0) - e.startY);
-                    }
-                },
-                scrollStop: function () {
-                    scrolling = false;
-                    updatePositions();
-                }
-            })
-        )
+        dispose: function () {
+            disposed = true;
+        }
     };
 }

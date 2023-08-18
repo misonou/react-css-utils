@@ -65,6 +65,16 @@ export interface Stickable {
      * @param element A DOM element.
      * @param dir Specifies which direction will the element be sticked to before when scrolled out-of-sight.
      * @param within A callback which returns the area on the screen where the element should stay contained.
+     * @deprecated Add sticky element directly using `ScrollableMixin.setStickyPosition`
+     *
+     * ```javascript
+     * scrollableMixin.setStickyPosition(element, dir, true);
+     * scrollableMixin.setStickyPosition(element, dir, within, true);
+     *
+     * // or directly accessing scrollable API:
+     * $(container).scrollable('setStickyPosition', element, dir,  true);
+     * $(container).scrollable('setStickyPosition', element, dir, within, true);
+     * ```
      */
     add(element: HTMLElement, dir: Zeta.Direction, within?: () => Zeta.Rect): void;
     /**
@@ -77,5 +87,6 @@ export interface Stickable {
  * Creates a handler to fix element in position when being scrolled out-of-sight.
  * @param container A scrollable container.
  * @see {@link Stickable}
+ * @deprecated Add sticky element directly using `ScrollableMixin.setStickyPosition`
  */
 export function initStickable(container: HTMLElement): Stickable;
