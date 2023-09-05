@@ -143,7 +143,7 @@ export function position(element, to, dir, within, offset) {
                 }
                 point = dir ? winRect[dir] - (winMargin[dir] - margin[dir]) * DIR_SIGN[dir] : center - margin[p];
                 setStyle(style, dir, point, parentRect, p, pSize);
-                return dir || 'center' + axis;
+                return dir || 'center-' + axis;
             }
             // determine cases of 'normal', 'flip' and 'fit' by available rooms
             var rDir = inset ? FLIP_POS[dir] : dir;
