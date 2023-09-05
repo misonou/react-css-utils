@@ -148,9 +148,9 @@ export function position(element, to, dir, within, offset) {
             // determine cases of 'normal', 'flip' and 'fit' by available rooms
             var rDir = inset ? FLIP_POS[dir] : dir;
             var rSign = DIR_SIGN[rDir];
-            if (refRect[dir] * rSign + size + winMargin[dir] <= winRect[rDir] * rSign) {
+            if (Math.floor(refRect[dir] * rSign + size + winMargin[dir]) <= winRect[rDir] * rSign) {
                 point = refRect[dir] - margin[FLIP_POS[rDir]] * rSign;
-            } else if (refRect[FLIP_POS[dir]] * rSign - size - winMargin[FLIP_POS[dir]] > winRect[FLIP_POS[rDir]] * rSign) {
+            } else if (Math.ceil(refRect[FLIP_POS[dir]] * rSign - size - winMargin[FLIP_POS[dir]]) >= winRect[FLIP_POS[rDir]] * rSign) {
                 if (allowScroll && !mode) {
                     // try scroll in another direction before 'flip' or 'fit'
                     return;
