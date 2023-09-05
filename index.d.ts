@@ -1,15 +1,49 @@
+export type PositionAlign = Exclude<Zeta.BoxAlign, 'auto'>
+    | `${Zeta.BoxSide} inset`
+    | `${Zeta.BoxSide} center inset`
+    | `${Zeta.BoxCorner} ${'inset' | 'inset-x' | 'inset-y'}`;
+
 export function cssFromPoint(point: Zeta.PointLike, origin?: Zeta.Direction2D, parent?: Element): Pick<CSSStyleDeclaration, 'top' | 'left' | 'right' | 'bottom'>;
 
 export function cssFromPoint(x: number, y: number, origin?: Zeta.Direction2D, parent?: Element): Pick<CSSStyleDeclaration, 'top' | 'left' | 'right' | 'bottom'>;
 
-export function position(element: Element, to: Zeta.PointLike | Zeta.RectLike | Element, dir: Zeta.Direction2D, within?: Element, offset?: number): void;
+/**
+ * Places element in alignment to another element.
+ * @param element Element to be placed. It must be styled with `position: absolute` or `position: fixed`.
+ * @param to A DOM element, a `Rect`-like object or a point with x and y coordinates, as the reference to where the element should be placed.
+ * @param dir A space-delimited string specifying how element is aligned in x and y direction.
+ * @param within When specified, element will be positioned inside the bounds of the specified element.
+ * @param offset Specifies how far the element is positioned away from the reference position in pixels.
+ */
+export function position(element: Element, to: Zeta.PointLike | Zeta.RectLike | Element, dir: PositionAlign, within?: Element, offset?: number): void;
 
-export function position(element: Element, to: Zeta.PointLike | Zeta.RectLike | Element, dir: Zeta.Direction2D, options?: PositionOptions): void;
+/**
+ * Places element in alignment to another element.
+ * @param element Element to be placed. It must be styled with `position: absolute` or `position: fixed`.
+ * @param to A DOM element, a `Rect`-like object or a point with x and y coordinates, as the reference to where the element should be placed.
+ * @param dir A space-delimited string specifying how element is aligned in x and y direction.
+ * @param options A dictionary specifying extra options.
+ */
+export function position(element: Element, to: Zeta.PointLike | Zeta.RectLike | Element, dir: PositionAlign, options?: PositionOptions): void;
 
 export interface PositionOptions {
+    /**
+     * When specified, element will be positioned inside the bounds of the specified element.
+     */
     within?: Element;
+    /**
+     * Specifies how far the element is positioned away from the reference position in pixels.
+     */
     offset?: number;
+    /**
+     * Whether to scroll the viewport in order to place element in desired position before trying to
+     * fit to viewport's boundaries.
+     */
     scrollToFit?: boolean;
+    /**
+     * Aligns element only on a particular axis.
+     * @deprecated Use `auto` keyword or without keyword in such direction in `dir` parameter, i.e. `left` or `center auto` for `x-only`.
+     */
     axis?: 'x-only' | 'y-only' | 'both';
 }
 

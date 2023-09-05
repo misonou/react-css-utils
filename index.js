@@ -2,7 +2,7 @@ import { useState } from "react";
 import $ from "jquery";
 import dom from "zeta-dom/dom";
 import { containsOrEquals, getContentRect, getRect, mergeRect, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
-import { always, either, extend, is, isPlainObject, keys, makeArray, matchWord, setImmediate, setTimeout } from "zeta-dom/util";
+import { always, either, extend, is, isPlainObject, keys, makeArray, matchWord, matchWordMulti, setImmediate, setTimeout } from "zeta-dom/util";
 import { useDispose } from "zeta-dom-react";
 
 const FLIP_POS = {
@@ -61,12 +61,20 @@ export function position(element, to, dir, within, offset) {
         maxWidth: '',
         maxHeight: ''
     });
-    var oDirX = matchWord(dir, 'left right center') || 'left';
-    var oDirY = matchWord(dir, 'top bottom center') || 'bottom';
-    var oInset = matchWord(dir, 'inset-x inset-y inset') || (FLIP_POS[oDirY] ? 'inset-x' : 'inset-y');
-    var inset = oInset === 'inset';
-    var insetX = inset || (FLIP_POS[oDirY] && oInset === 'inset-x');
-    var insetY = inset || (FLIP_POS[oDirX] && oInset === 'inset-y');
+    var oDirX = matchWord(dir, 'left right');
+    var oDirY = matchWord(dir, 'top bottom');
+    var oInset = matchWord(dir, 'inset-x inset-y inset') || (modeY < 0 ? 'inset' : FLIP_POS[oDirY] ? 'inset-x' : 'inset-y');
+    if (!oDirX || !oDirY) {
+        var iter = matchWordMulti(dir, 'auto center');
+        var iterValue = iter() || 'auto';
+        oDirX = oDirX || iterValue;
+        oDirY = oDirY || iter() || iterValue;
+        modeX = oDirX === 'auto' ? -1 : modeX;
+        modeY = oDirY === 'auto' ? -1 : modeY;
+    }
+    var insetX = modeX >= 0 && (oInset === 'inset' || (FLIP_POS[oDirY] && oInset === 'inset-x'));
+    var insetY = modeY >= 0 && (oInset === 'inset' || (FLIP_POS[oDirX] && oInset === 'inset-y'));
+    var inset = insetX && insetY;
     var winInset = inset || within ? 0 : 10;
     var elmRect = getRect(element, 'margin-box');
     var elmRectNoMargin = getRect(element);
