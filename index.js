@@ -18,11 +18,20 @@ const DIR_SIGN = {
     bottom: 1,
     center: 0,
 };
+const PC = {
+    0.5: '50%',
+    1: '100%'
+};
 
-function setStyle(style, dir, pos, parentRect, p, pSize) {
+function setStyle(style, dir, pos, parentRect, p, pSize, percentage) {
     dir = dir || p;
-    pos = pos - parentRect[p];
-    style[dir] = (dir === p ? pos : parentRect[pSize] - pos) + 'px';
+    pos = (parentRect[dir] - pos) * DIR_SIGN[dir];
+    if (percentage) {
+        var remainder = pos - (parentRect[pSize] * percentage);
+        style[dir] = remainder ? 'calc(' + PC[percentage] + ' + ' + remainder + 'px)' : PC[percentage];
+    } else {
+        style[dir] = pos + 'px';
+    }
     style[FLIP_POS[dir]] = 'auto';
 }
 
@@ -55,6 +64,7 @@ export function position(element, to, dir, within, offset) {
     offset = offset || 0;
 
     var isAbsolute = $(element).css('position') === 'absolute';
+    var allowPercentage = isAbsolute && to === element.offsetParent;
     $(element).css({
         position: isAbsolute ? 'absolute' : 'fixed',
         transform: '',
@@ -150,7 +160,7 @@ export function position(element, to, dir, within, offset) {
                     style.transform += ' ' + sTransform;
                 }
                 point = dir ? winRect[dir] - (winMargin[dir] - margin[dir]) * DIR_SIGN[dir] : center - margin[p];
-                setStyle(style, dir, point, parentRect, p, pSize);
+                setStyle(style, dir, point, parentRect, p, pSize, allowPercentage && !dir && 0.5);
                 return dir || 'center-' + axis;
             }
             // determine cases of 'normal', 'flip' and 'fit' by available rooms
@@ -174,11 +184,12 @@ export function position(element, to, dir, within, offset) {
                 setStyle(style, dir, point, parentRect, p, pSize);
                 return dir;
             }
+            var percentage = allowPercentage && (dir !== rDir ? 0 : 1);
             if (!inset) {
                 dir = FLIP_POS[dir];
             }
             style[pMax] = Math.abs(winRect[FLIP_POS[dir]] - point);
-            setStyle(style, dir, point, parentRect, p, pSize);
+            setStyle(style, dir, point, parentRect, p, pSize, percentage);
             return dir;
         };
         dirX = setActualPosition(oDirX, insetX, modeX, 'x', 'left', 'width', 'maxWidth', 'translateX(-50%)');
