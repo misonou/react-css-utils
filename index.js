@@ -1,7 +1,7 @@
 import { useState } from "react";
 import $ from "jquery";
 import dom from "zeta-dom/dom";
-import { containsOrEquals, getContentRect, getRect, mergeRect, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
+import { containsOrEquals, getContentRect, getRect, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
 import { always, either, extend, is, isPlainObject, keys, makeArray, matchWord, matchWordMulti, setImmediate, setTimeout } from "zeta-dom/util";
 import { useDispose } from "zeta-dom-react";
 
@@ -22,6 +22,10 @@ const PC = {
     0.5: '50%',
     1: '100%'
 };
+
+function intersectRect(a, b) {
+    return toPlainRect(Math.max(a.left, b.left), Math.max(a.top, b.top), Math.min(a.right, b.right), Math.min(a.bottom, b.bottom));
+}
 
 function setStyle(style, dir, pos, parentRect, p, pSize, percentage) {
     dir = dir || p;
@@ -86,13 +90,12 @@ export function position(element, to, dir, within, offset) {
     var insetY = modeY >= 0 && (oInset === 'inset' || (FLIP_POS[oDirX] && oInset === 'inset-y'));
     var inset = insetX && insetY;
     var winInset = inset || within ? 0 : 10;
-    var elmRect = getRect(element, 'margin-box');
-    var elmRectNoMargin = getRect(element);
-    var elmRectWinMargin = winInset ? mergeRect(elmRectNoMargin.expand(10), elmRect) : elmRect;
+    var elmRectWithMargin = getRect(element, 'margin-box');
+    var elmRect = getRect(element);
     var margin = {};
     var winMargin = {};
     keys(FLIP_POS).forEach(function (v) {
-        margin[v] = Math.max(0, (elmRect[v] - elmRectNoMargin[v]) * DIR_SIGN[v]);
+        margin[v] = Math.max(0, (elmRectWithMargin[v] - elmRect[v]) * DIR_SIGN[v]);
         winMargin[v] = Math.max(margin[v], winInset);
     });
 
@@ -107,7 +110,7 @@ export function position(element, to, dir, within, offset) {
         if (allowScroll) {
             var calculateIdealPosition = function (dir, inset, mode, p, pSize) {
                 var q = FLIP_POS[p];
-                var size = elmRectWinMargin[pSize];
+                var size = elmRect[pSize];
                 if (mode === -1) {
                     idealRect[p] = elmRect[p];
                 } else if (!FLIP_POS[dir]) {
@@ -122,7 +125,7 @@ export function position(element, to, dir, within, offset) {
             calculateIdealPosition(oDirX, insetX, modeX, 'left', 'width');
             calculateIdealPosition(oDirY, insetY, modeY, 'top', 'height');
 
-            var delta = scrollIntoView(to, idealRect, within);
+            var delta = scrollIntoView(to, idealRect.expand(winMargin), within);
             if (delta) {
                 refRect = refRect.translate(-delta.x, -delta.y);
                 idealRect = idealRect.translate(-delta.x, -delta.y);
@@ -131,7 +134,7 @@ export function position(element, to, dir, within, offset) {
         }
         parentRect = parentRect || getRect(dom.root);
 
-        var winRect = inset ? refRect : within ? getRect(within) : getContentRect(dom.root);
+        var winRect = inset ? refRect.expand(margin, -1) : within ? getRect(within).expand(margin, -1) : intersectRect(getContentRect(dom.root).expand(margin, -1), getRect().expand(-winInset));
         var style = {
             transform: ''
         };
@@ -139,7 +142,7 @@ export function position(element, to, dir, within, offset) {
             var q = FLIP_POS[p];
             if (mode === -1) {
                 style[pMax] = Math.min(winRect[q], idealRect[q]) - Math.max(winRect[p], idealRect[p]);
-                if (style[pMax] < idealRect[p] && scrollToFit && !allowScroll) {
+                if (style[pMax] < idealRect[pSize] && scrollToFit && !allowScroll) {
                     // not enough room to show the whole element in current position
                     // try scroll and maximize available rooms
                     return;
@@ -148,27 +151,27 @@ export function position(element, to, dir, within, offset) {
             }
             var size = elmRect[pSize];
             var point;
-            style[pMax] = winRect[pSize] - winMargin[p] - winMargin[q] - (offset || 0);
+            style[pMax] = winRect[pSize] - offset;
             if (!FLIP_POS[dir]) {
                 var center = (refRect[p] + refRect[q]) / 2;
-                if (center - winRect[p] < size / 2 + winMargin[p]) {
+                if (center - winRect[p] < size / 2) {
                     dir = p;
-                } else if (winRect[q] - center < size / 2 + winMargin[q]) {
+                } else if (winRect[q] - center < size / 2) {
                     dir = q;
                 } else {
                     dir = '';
                     style.transform += ' ' + sTransform;
                 }
-                point = dir ? winRect[dir] - (winMargin[dir] - margin[dir]) * DIR_SIGN[dir] : center - margin[p];
+                point = dir ? winRect[dir] + margin[dir] * DIR_SIGN[dir] : center - margin[p];
                 setStyle(style, dir, point, parentRect, p, pSize, allowPercentage && !dir && 0.5);
                 return dir || 'center-' + axis;
             }
             // determine cases of 'normal', 'flip' and 'fit' by available rooms
             var rDir = inset ? FLIP_POS[dir] : dir;
             var rSign = DIR_SIGN[rDir];
-            if (Math.floor(refRect[dir] * rSign + size + winMargin[dir]) <= winRect[rDir] * rSign) {
+            if (Math.floor(refRect[dir] * rSign + size) <= winRect[rDir] * rSign) {
                 point = refRect[dir] - margin[FLIP_POS[rDir]] * rSign;
-            } else if (Math.ceil(refRect[FLIP_POS[dir]] * rSign - size - winMargin[FLIP_POS[dir]]) >= winRect[FLIP_POS[rDir]] * rSign) {
+            } else if (Math.ceil(refRect[FLIP_POS[dir]] * rSign - size) >= winRect[FLIP_POS[rDir]] * rSign) {
                 if (allowScroll && !mode) {
                     // try scroll in another direction before 'flip' or 'fit'
                     return;
@@ -180,7 +183,7 @@ export function position(element, to, dir, within, offset) {
                     // try scroll before 'fit'
                     return;
                 }
-                point = winRect[dir];
+                point = winRect[dir] + margin[dir] * DIR_SIGN[dir];
                 setStyle(style, dir, point, parentRect, p, pSize);
                 return dir;
             }
