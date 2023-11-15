@@ -159,26 +159,27 @@ export function position(element, to, dir, within, offset) {
                 } else if (winRect[q] - center < size / 2) {
                     dir = q;
                 } else {
-                    dir = '';
+                    point = center - margin[p];
                     style.transform += ' ' + sTransform;
+                    setStyle(style, '', point, parentRect, p, pSize, allowPercentage && 0.5);
+                    return 'center-' + axis;
                 }
-                point = dir ? winRect[dir] + margin[dir] * DIR_SIGN[dir] : center - margin[p];
-                setStyle(style, dir, point, parentRect, p, pSize, allowPercentage && !dir && 0.5);
-                return dir || 'center-' + axis;
-            }
-            // determine cases of 'normal', 'flip' and 'fit' by available rooms
-            var rDir = inset ? FLIP_POS[dir] : dir;
-            var rSign = DIR_SIGN[rDir];
-            if (Math.floor(refRect[dir] * rSign + size) <= winRect[rDir] * rSign) {
-                point = refRect[dir] - margin[FLIP_POS[rDir]] * rSign;
-            } else if (Math.ceil(refRect[FLIP_POS[dir]] * rSign - size) >= winRect[FLIP_POS[rDir]] * rSign) {
-                if (allowScroll && !mode) {
-                    // try scroll in another direction before 'flip' or 'fit'
-                    return;
-                }
-                dir = FLIP_POS[dir];
-                point = refRect[dir] + margin[rDir] * rSign;
             } else {
+                // determine cases of 'normal', 'flip' and 'fit' by available rooms
+                var rDir = inset ? FLIP_POS[dir] : dir;
+                var rSign = DIR_SIGN[rDir];
+                if (Math.floor(refRect[dir] * rSign + size) <= winRect[rDir] * rSign) {
+                    point = refRect[dir] - margin[FLIP_POS[rDir]] * rSign;
+                } else if (Math.ceil(refRect[FLIP_POS[dir]] * rSign - size) >= winRect[FLIP_POS[rDir]] * rSign) {
+                    if (allowScroll && !mode) {
+                        // try scroll in another direction before 'flip' or 'fit'
+                        return;
+                    }
+                    dir = FLIP_POS[dir];
+                    point = refRect[dir] + margin[rDir] * rSign;
+                }
+            }
+            if (!point) {
                 if (scrollToFit && !mode) {
                     // try scroll before 'fit'
                     return;
