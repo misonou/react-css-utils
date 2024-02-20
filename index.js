@@ -90,6 +90,7 @@ export function position(element, to, dir, within, offset) {
     var insetY = modeY >= 0 && (oInset === 'inset' || (FLIP_POS[oDirX] && oInset === 'inset-y'));
     var inset = insetX && insetY;
     var winInset = inset || within ? 0 : 10;
+    var curStyle = getComputedStyle(element);
     var elmRectWithMargin = getRect(element, 'margin-box');
     var elmRect = intersectRect(elmRectWithMargin, getRect(element));
     var margin = {};
@@ -147,6 +148,7 @@ export function position(element, to, dir, within, offset) {
                     // try scroll and maximize available rooms
                     return;
                 }
+                style[pMax] = idealRect[p] + idealRect[q] > refRect[p] + refRect[q] ? winRect[q] - idealRect[p] : idealRect[q] - winRect[p];
                 return 'preserve-' + axis;
             }
             var size = elmRect[pSize];
@@ -201,6 +203,12 @@ export function position(element, to, dir, within, offset) {
         return dirX && dirY && style;
     };
     var style = calc(modeX, modeY) || calc(modeX, modeY, true) || calc(dirX ? modeX : 1, dirY ? modeY : 1, true);
+    if (style.maxWidth > parseInt(curStyle.maxWidth)) {
+        delete style.maxWidth;
+    }
+    if (style.maxHeight > parseInt(curStyle.maxHeight)) {
+        delete style.maxHeight;
+    }
     $(element).css(style).attr('position-anchor', dirX + ' ' + dirY);
 }
 
