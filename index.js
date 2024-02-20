@@ -91,11 +91,11 @@ export function position(element, to, dir, within, offset) {
     var inset = insetX && insetY;
     var winInset = inset || within ? 0 : 10;
     var elmRectWithMargin = getRect(element, 'margin-box');
-    var elmRect = getRect(element);
+    var elmRect = intersectRect(elmRectWithMargin, getRect(element));
     var margin = {};
     var winMargin = {};
     keys(FLIP_POS).forEach(function (v) {
-        margin[v] = Math.max(0, (elmRectWithMargin[v] - elmRect[v]) * DIR_SIGN[v]);
+        margin[v] = (elmRectWithMargin[v] - elmRect[v]) * DIR_SIGN[v];
         winMargin[v] = Math.max(margin[v], winInset);
     });
 
