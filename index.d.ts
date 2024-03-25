@@ -1,4 +1,5 @@
-export type PositionAlign = Exclude<Zeta.BoxAlign, 'auto'>
+export type PositionAlign = Zeta.BoxAlign
+    | `${Zeta.BoxSide} auto`
     | `${Zeta.BoxSide} inset`
     | `${Zeta.BoxSide} center inset`
     | `${Zeta.BoxCorner} ${'inset' | 'inset-x' | 'inset-y'}`;
