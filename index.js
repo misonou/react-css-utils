@@ -68,6 +68,9 @@ export function position(element, to, dir, within, offset) {
     var modeX = options.axis === 'y-only' ? -1 : 0;
     var modeY = options.axis === 'x-only' ? -1 : 0;
     var scrollToFit = options.scrollToFit && is(to, Node);
+    var strategy = options.strategy;
+    var allowFit = !strategy || matchWord(strategy, 'fit');
+    var allowFlip = !strategy || matchWord(strategy, 'flip');
     var oDirX = matchWord(dir, 'left right');
     var oDirY = matchWord(dir, 'top bottom');
     var oInset = matchWord(dir, 'inset-x inset-y inset') || (modeY < 0 ? 'inset' : FLIP_POS[oDirY] ? 'inset-x' : 'inset-y');
@@ -158,9 +161,9 @@ export function position(element, to, dir, within, offset) {
             style[pMax] = winRect[pSize] - offset;
             if (!FLIP_POS[dir]) {
                 var center = (refRect[p] + refRect[q]) / 2;
-                if (center - winRect[p] < size / 2) {
+                if (allowFit && center - winRect[p] < size / 2) {
                     dir = p;
-                } else if (winRect[q] - center < size / 2) {
+                } else if (allowFit && winRect[q] - center < size / 2) {
                     dir = q;
                 } else {
                     point = center - margin[p];
@@ -172,15 +175,23 @@ export function position(element, to, dir, within, offset) {
                 // determine cases of 'normal', 'flip' and 'fit' by available rooms
                 var rDir = inset ? FLIP_POS[dir] : dir;
                 var rSign = DIR_SIGN[rDir];
-                if (Math.floor(refRect[dir] * rSign + size) <= winRect[rDir] * rSign) {
+                var sNormal = winRect[rDir] * rSign - Math.floor(refRect[dir] * rSign + size);
+                if (sNormal >= 0) {
                     point = refRect[dir] - margin[FLIP_POS[rDir]] * rSign;
-                } else if (Math.ceil(refRect[FLIP_POS[dir]] * rSign - size) >= winRect[FLIP_POS[rDir]] * rSign) {
+                } else if (allowFlip) {
                     if (allowScroll && !mode) {
                         // try scroll in another direction before 'flip' or 'fit'
                         return;
                     }
-                    dir = FLIP_POS[dir];
-                    point = refRect[dir] + margin[rDir] * rSign;
+                    var sFlip = Math.ceil(refRect[FLIP_POS[dir]] * rSign - size) - winRect[FLIP_POS[rDir]] * rSign;
+                    if (!allowFit && sFlip < 0 && sFlip < sNormal) {
+                        // keep 'normal' position when both 'normal' and 'flip' have not enough available rooms
+                        // but 'normal' has more room than 'flip' position
+                        point = refRect[dir] - margin[FLIP_POS[rDir]] * rSign;
+                    } else if (sFlip >= 0 || !allowFit) {
+                        dir = FLIP_POS[dir];
+                        point = refRect[dir] + margin[rDir] * rSign;
+                    }
                 }
             }
             if (!point) {

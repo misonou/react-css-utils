@@ -42,6 +42,14 @@ export interface PositionOptions {
      */
     scrollToFit?: boolean;
     /**
+     * Specifies the positioning strategies when there is not enough space to place element in the primary alignment.
+     * - `flip` means to position in the opposite side of the anchor element;
+     * - `fit` means to justify to the viewport or the boundary of the `within` element.
+     *
+     * Default is `flip fit`.
+     */
+    strategy?: 'flip fit' | 'flip' | 'fit';
+    /**
      * Aligns element only on a particular axis.
      * @deprecated Use `auto` keyword or without keyword in such direction in `dir` parameter, i.e. `left` or `center auto` for `x-only`.
      */
