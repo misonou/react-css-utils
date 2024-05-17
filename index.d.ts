@@ -42,6 +42,14 @@ export interface PositionOptions {
      */
     scrollToFit?: boolean;
     /**
+     * Specifies minimum basis width when positioning element.
+     */
+    basisWidth?: number;
+    /**
+     * Specifies minimum basis height when positioning element.
+     */
+    basisHeight?: number;
+    /**
      * Specifies the positioning strategies when there is not enough space to place element in the primary alignment.
      * - `flip` means to position in the opposite side of the anchor element;
      * - `fit` means to justify to the viewport or the boundary of the `within` element.

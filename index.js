@@ -71,6 +71,10 @@ export function position(element, to, dir, within, offset) {
     var strategy = options.strategy;
     var allowFit = !strategy || matchWord(strategy, 'fit');
     var allowFlip = !strategy || matchWord(strategy, 'flip');
+    var minSize = {
+        width: options.basisWidth || 0,
+        height: options.basisHeight || 0
+    };
     var oDirX = matchWord(dir, 'left right');
     var oDirY = matchWord(dir, 'top bottom');
     var oInset = matchWord(dir, 'inset-x inset-y inset') || (modeY < 0 ? 'inset' : FLIP_POS[oDirY] ? 'inset-x' : 'inset-y');
@@ -99,6 +103,10 @@ export function position(element, to, dir, within, offset) {
     var elmRectWithMargin = getRect(element, 'margin-box');
     var elmRectPainted = getRect(element);
     var elmRect = intersectRect(elmRectWithMargin, elmRectPainted);
+    var elmSize = {
+        width: Math.max(elmRect.width, minSize.width),
+        height: Math.max(elmRect.height, minSize.height)
+    };
     var margin = {};
     var winMargin = {};
     each(FLIP_POS, function (v) {
@@ -117,7 +125,7 @@ export function position(element, to, dir, within, offset) {
         if (allowScroll) {
             var calculateIdealPosition = function (dir, inset, mode, p, pSize) {
                 var q = FLIP_POS[p];
-                var size = elmRect[pSize];
+                var size = elmSize[pSize];
                 if (mode === -1) {
                     idealRect[p] = elmRect[p];
                 } else if (!FLIP_POS[dir]) {
@@ -156,7 +164,7 @@ export function position(element, to, dir, within, offset) {
                 style[pMax] = idealRect[p] + idealRect[q] > refRect[p] + refRect[q] ? winRect[q] - idealRect[p] : idealRect[q] - winRect[p];
                 return 'preserve-' + axis;
             }
-            var size = elmRect[pSize];
+            var size = elmSize[pSize];
             var point;
             style[pMax] = winRect[pSize] - offset;
             if (!FLIP_POS[dir]) {
