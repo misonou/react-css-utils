@@ -4,6 +4,8 @@ export type PositionAlign = Zeta.BoxAlign
     | `${Zeta.BoxSide} center inset`
     | `${Zeta.BoxCorner} ${'inset' | 'inset-x' | 'inset-y'}`;
 
+export type PositionAnchor = Zeta.PointLike | Zeta.RectLike | Element;
+
 export function cssFromPoint(point: Zeta.PointLike, origin?: Zeta.Direction2D, parent?: Element): Pick<CSSStyleDeclaration, 'top' | 'left' | 'right' | 'bottom'>;
 
 export function cssFromPoint(x: number, y: number, origin?: Zeta.Direction2D, parent?: Element): Pick<CSSStyleDeclaration, 'top' | 'left' | 'right' | 'bottom'>;
@@ -16,7 +18,7 @@ export function cssFromPoint(x: number, y: number, origin?: Zeta.Direction2D, pa
  * @param within When specified, element will be positioned inside the bounds of the specified element.
  * @param offset Specifies how far the element is positioned away from the reference position in pixels.
  */
-export function position(element: Element, to: Zeta.PointLike | Zeta.RectLike | Element, dir: PositionAlign, within?: Element, offset?: number): void;
+export function position(element: Element, to: PositionAnchor, dir: PositionAlign, within?: Element, offset?: number): void;
 
 /**
  * Places element in alignment to another element.
@@ -25,7 +27,40 @@ export function position(element: Element, to: Zeta.PointLike | Zeta.RectLike | 
  * @param dir A space-delimited string specifying how element is aligned in x and y direction.
  * @param options A dictionary specifying extra options.
  */
-export function position(element: Element, to: Zeta.PointLike | Zeta.RectLike | Element, dir: PositionAlign, options?: PositionOptions): void;
+export function position(element: Element, to: PositionAnchor, dir: PositionAlign, options?: PositionOptions): void;
+
+export class Positioner {
+    /**
+     * @see {@link position}
+     * @requires {@link ResizeObserver}
+     */
+    constructor(element: Element, to: PositionAnchor, dir: PositionAlign, options?: PositionOptions);
+
+    /**
+     * Triggers re-positioning manually.
+     */
+    refresh(): void;
+    /**
+     * Enables automatic re-positioning when viewport size or
+     * the bounding size of {@link PositionOptions.within} has changed.
+     */
+    observe(): void;
+    /**
+     * Disables automatic re-positioning.
+     */
+    disconnect(): void;
+    /**
+     * Updates position.
+     * @param options A dictionary specifying positioning options.
+     */
+    setOptions(options: PositionOptions): void;
+    /**
+     * Updates position.
+     * @param dir A space-delimited string specifying how element is aligned in x and y direction.
+     * @param options A dictionary specifying positioning options.
+     */
+    setOptions(dir: PositionAlign, options?: PositionOptions): void;
+}
 
 export interface PositionOptions {
     /**

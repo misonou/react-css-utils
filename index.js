@@ -1,8 +1,9 @@
 import { useState } from "react";
 import $ from "jquery";
 import dom from "zeta-dom/dom";
-import { containsOrEquals, getContentRect, getRect, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
-import { always, each, either, extend, is, isPlainObject, makeArray, matchWord, matchWordMulti, setImmediate, setTimeout } from "zeta-dom/util";
+import { bind, containsOrEquals, getContentRect, getRect, isVisible, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
+import { always, createPrivateStore, definePrototype, each, either, extend, is, isPlainObject, makeArray, mapRemove, matchWord, matchWordMulti, setImmediate, setTimeout } from "zeta-dom/util";
+import { createAutoCleanupMap } from "zeta-dom/observe";
 import { useDispose } from "zeta-dom-react";
 
 const FLIP_POS = {
@@ -22,6 +23,9 @@ const PC = {
     0.5: '50%',
     1: '100%'
 };
+const _ = /*#__PURE__*/ createPrivateStore();
+
+var positionCallbacks;
 
 function intersectRect(a, b) {
     return toPlainRect(Math.max(a.left, b.left), Math.max(a.top, b.top), Math.min(a.right, b.right), Math.min(a.bottom, b.bottom));
@@ -54,10 +58,14 @@ export function cssFromPoint(x, y, origin, parent) {
 }
 
 export function position(element, to, dir, within, offset) {
-    var options = {};
     if (!containsOrEquals(dom.root, element)) {
         document.body.appendChild(element);
     }
+    positionCallback(element, to, dir, within, offset)();
+}
+
+function positionCallback(element, to, dir, within, offset) {
+    var options = {};
     if (isPlainObject(within)) {
         options = within;
         offset = within.offset;
@@ -88,7 +96,13 @@ export function position(element, to, dir, within, offset) {
     }
     var insetX = modeX >= 0 && (oInset === 'inset' || (FLIP_POS[oDirY] && oInset === 'inset-x'));
     var insetY = modeY >= 0 && (oInset === 'inset' || (FLIP_POS[oDirX] && oInset === 'inset-y'));
+    return positionImpl.bind(undefined, element, to, within, oDirX, oDirY, insetX, insetY, modeX, modeY, offset || 0, scrollToFit, allowFlip, allowFit, minSize);
+}
 
+function positionImpl(element, to, within, oDirX, oDirY, insetX, insetY, modeX, modeY, offset, scrollToFit, allowFlip, allowFit, minSize) {
+    if (!isVisible(element) || (is(to, Node) && !isVisible(to))) {
+        return;
+    }
     var isAbsolute = $(element).css('position') === 'absolute';
     var allowPercentage = isAbsolute && to === element.offsetParent;
     $(element).css({
@@ -361,3 +375,76 @@ export function initStickable(container) {
         }
     };
 }
+
+export function Positioner(element, to, dir, options) {
+    _(this, {
+        element: element,
+        to: is(to, Node) || extend({}, to),
+        dir: dir,
+        options: extend({}, options),
+        callback: positionCallback(element, to, dir, options)
+    });
+}
+
+function connectPositioner(state) {
+    if (!positionCallbacks) {
+        positionCallbacks = createAutoCleanupMap(function (i, v) {
+            disconnectPositioner(v);
+        });
+        bind(window.visualViewport || window, 'resize', function () {
+            setTimeout(function () {
+                each(positionCallbacks, function (i, v) {
+                    v.callback();
+                });
+            }, 50);
+        });
+    }
+    var element = state.element;
+    var options = state.options;
+    if (positionCallbacks.has(element)) {
+        disconnectPositioner(mapRemove(positionCallbacks, element));
+    }
+    if (options.within) {
+        var observer = state.observer || (state.observer = new ResizeObserver(function () {
+            state.callback();
+        }));
+        observer.observe(options.within);
+    }
+    positionCallbacks.set(element, state);
+    state.callback();
+}
+
+function disconnectPositioner(state) {
+    if (positionCallbacks.get(state.element) === state) {
+        positionCallbacks.delete(state.element);
+    }
+    if (state.observer) {
+        state.observer.disconnect();
+    }
+}
+
+/*#__PURE__*/
+definePrototype(Positioner, {
+    refresh: function () {
+        _(this).callback();
+    },
+    observe: function () {
+        connectPositioner(_(this));
+    },
+    disconnect: function () {
+        disconnectPositioner(_(this));
+    },
+    setOptions: function (dir, options) {
+        var state = _(this);
+        if (isPlainObject(dir)) {
+            options = dir;
+        } else {
+            state.dir = dir;
+        }
+        options = extend(state.options, options);
+        state.callback = positionCallback(state.element, state.to, state.dir, options);
+        if (positionCallbacks.get(state.element) === state) {
+            connectPositioner(state);
+        }
+    }
+});
