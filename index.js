@@ -92,7 +92,8 @@ export function position(element, to, dir, within, offset) {
     var winInset = inset || within ? 0 : 10;
     var curStyle = getComputedStyle(element);
     var elmRectWithMargin = getRect(element, 'margin-box');
-    var elmRect = intersectRect(elmRectWithMargin, getRect(element));
+    var elmRectPainted = getRect(element);
+    var elmRect = intersectRect(elmRectWithMargin, elmRectPainted);
     var margin = {};
     var winMargin = {};
     keys(FLIP_POS).forEach(function (v) {
@@ -194,7 +195,7 @@ export function position(element, to, dir, within, offset) {
             if (!inset) {
                 dir = FLIP_POS[dir];
             }
-            style[pMax] = Math.abs(winRect[FLIP_POS[dir]] - point);
+            style[pMax] = Math.abs(winRect[FLIP_POS[dir]] - point + (elmRectWithMargin[dir] - elmRectPainted[dir]));
             setStyle(style, dir, point, parentRect, p, pSize, percentage);
             return dir;
         };
