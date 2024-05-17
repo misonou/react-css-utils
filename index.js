@@ -2,7 +2,7 @@ import { useState } from "react";
 import $ from "jquery";
 import dom from "zeta-dom/dom";
 import { containsOrEquals, getContentRect, getRect, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
-import { always, either, extend, is, isPlainObject, keys, makeArray, matchWord, matchWordMulti, setImmediate, setTimeout } from "zeta-dom/util";
+import { always, each, either, extend, is, isPlainObject, makeArray, matchWord, matchWordMulti, setImmediate, setTimeout } from "zeta-dom/util";
 import { useDispose } from "zeta-dom-react";
 
 const FLIP_POS = {
@@ -54,27 +54,20 @@ export function cssFromPoint(x, y, origin, parent) {
 }
 
 export function position(element, to, dir, within, offset) {
-    var modeX = 0, modeY = 0, scrollToFit;
+    var options = {};
     if (!containsOrEquals(dom.root, element)) {
         document.body.appendChild(element);
     }
     if (isPlainObject(within)) {
-        modeX = within.axis === 'y-only' ? -1 : 0;
-        modeY = within.axis === 'x-only' ? -1 : 0;
-        scrollToFit = within.scrollToFit && is(to, Node);
+        options = within;
         offset = within.offset;
         within = within.within;
     }
     offset = offset || 0;
 
-    var isAbsolute = $(element).css('position') === 'absolute';
-    var allowPercentage = isAbsolute && to === element.offsetParent;
-    $(element).css({
-        position: isAbsolute ? 'absolute' : 'fixed',
-        transform: '',
-        maxWidth: '',
-        maxHeight: ''
-    });
+    var modeX = options.axis === 'y-only' ? -1 : 0;
+    var modeY = options.axis === 'x-only' ? -1 : 0;
+    var scrollToFit = options.scrollToFit && is(to, Node);
     var oDirX = matchWord(dir, 'left right');
     var oDirY = matchWord(dir, 'top bottom');
     var oInset = matchWord(dir, 'inset-x inset-y inset') || (modeY < 0 ? 'inset' : FLIP_POS[oDirY] ? 'inset-x' : 'inset-y');
@@ -88,6 +81,15 @@ export function position(element, to, dir, within, offset) {
     }
     var insetX = modeX >= 0 && (oInset === 'inset' || (FLIP_POS[oDirY] && oInset === 'inset-x'));
     var insetY = modeY >= 0 && (oInset === 'inset' || (FLIP_POS[oDirX] && oInset === 'inset-y'));
+
+    var isAbsolute = $(element).css('position') === 'absolute';
+    var allowPercentage = isAbsolute && to === element.offsetParent;
+    $(element).css({
+        position: isAbsolute ? 'absolute' : 'fixed',
+        transform: '',
+        maxWidth: '',
+        maxHeight: ''
+    });
     var inset = insetX && insetY;
     var winInset = inset || within ? 0 : 10;
     var curStyle = getComputedStyle(element);
@@ -96,7 +98,7 @@ export function position(element, to, dir, within, offset) {
     var elmRect = intersectRect(elmRectWithMargin, elmRectPainted);
     var margin = {};
     var winMargin = {};
-    keys(FLIP_POS).forEach(function (v) {
+    each(FLIP_POS, function (v) {
         margin[v] = (elmRectWithMargin[v] - elmRect[v]) * DIR_SIGN[v];
         winMargin[v] = Math.max(margin[v], winInset);
     });
@@ -143,8 +145,7 @@ export function position(element, to, dir, within, offset) {
         var setActualPosition = function (dir, inset, mode, axis, p, pSize, pMax, sTransform) {
             var q = FLIP_POS[p];
             if (mode === -1) {
-                style[pMax] = Math.min(winRect[q], idealRect[q]) - Math.max(winRect[p], idealRect[p]);
-                if (style[pMax] < idealRect[pSize] && scrollToFit && !allowScroll) {
+                if (scrollToFit && !allowScroll && idealRect[pSize] > Math.min(winRect[q], idealRect[q]) - Math.max(winRect[p], idealRect[p])) {
                     // not enough room to show the whole element in current position
                     // try scroll and maximize available rooms
                     return;
