@@ -202,7 +202,7 @@ export function position(element, to, dir, within, offset) {
                     }
                 }
             }
-            if (!point) {
+            if (point === undefined) {
                 if (scrollToFit && !mode) {
                     // try scroll before 'fit'
                     return;
