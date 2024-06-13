@@ -423,7 +423,6 @@ function disconnectPositioner(state) {
     }
 }
 
-/*#__PURE__*/
 definePrototype(Positioner, {
     refresh: function () {
         _(this).callback();
