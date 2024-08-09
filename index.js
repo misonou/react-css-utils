@@ -415,7 +415,7 @@ function connectPositioner(state) {
 }
 
 function disconnectPositioner(state) {
-    if (positionCallbacks.get(state.element) === state) {
+    if (positionCallbacks && positionCallbacks.get(state.element) === state) {
         positionCallbacks.delete(state.element);
     }
     if (state.observer) {
