@@ -143,7 +143,7 @@ export interface InitSortableOptions {
 /**
  * Creates a handler to enable ordering of child elements by mouse or touch events.
  */
-export function initSortable(element: HTMLElement, options: InitSortableOptions): void;
+export function initSortable(element: HTMLElement, options: InitSortableOptions): Zeta.UnregisterCallback;
 
 export interface Stickable {
     /**

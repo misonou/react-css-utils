@@ -317,7 +317,7 @@ export function useAnimatedIndicator(options) {
 }
 
 export function initSortable(element, options) {
-    dom.on(element, 'drag', options.handleSelector, function (e) {
+    return dom.on(element, 'drag', options.handleSelector, function (e) {
         const item = e.target.closest(options.itemSelector);
         if (!item || !element.contains(item)) {
             return;
