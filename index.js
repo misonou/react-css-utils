@@ -1,8 +1,8 @@
 import { useState } from "react";
 import $ from "jquery";
-import dom from "zeta-dom/dom";
+import dom, { reportError } from "zeta-dom/dom";
 import { bind, containsOrEquals, getContentRect, getRect, isVisible, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
-import { always, createPrivateStore, definePrototype, each, either, extend, is, isPlainObject, makeArray, mapRemove, matchWord, matchWordMulti, setImmediate, setTimeout } from "zeta-dom/util";
+import { always, createPrivateStore, definePrototype, each, either, extend, is, isPlainObject, makeArray, makeAsync, mapRemove, matchWord, matchWordMulti, setImmediate, setTimeout } from "zeta-dom/util";
 import { createAutoCleanupMap } from "zeta-dom/observe";
 import { useDispose } from "zeta-dom-react";
 
@@ -322,7 +322,8 @@ export function initSortable(element, options) {
         if (!item || !element.contains(item)) {
             return;
         }
-        const children = makeArray(item.parentElement.children);
+        const container = item.parentElement;
+        const children = makeArray(container.children);
         const curIndex = children.indexOf(item);
         const scrollable = e.target.closest('[scrollable-target]');
         const r0 = getRect(scrollable);
@@ -350,8 +351,11 @@ export function initSortable(element, options) {
         setClass(item, 'dragging', true);
         always(promise, function (result) {
             if (result && newIndex !== curIndex) {
-                item.parentElement.insertBefore(item, children[newIndex + +(newIndex > curIndex)]);
-                options.onOrderChanged(curIndex, newIndex);
+                container.insertBefore(item, children[newIndex + +(newIndex > curIndex)]);
+                makeAsync(options.onOrderChanged)(curIndex, newIndex).catch(function () {
+                    container.insertBefore(item, children[curIndex + 1]);
+                    reportError(e, container);
+                });
             }
             setClass(item, 'dragging', false);
             children.forEach(function (v) {

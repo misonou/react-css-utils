@@ -137,7 +137,7 @@ export interface InitSortableOptions {
     /**
      * A callback which receives the index of an element before and after reordering.
      */
-    onOrderChanged: (oldIndex: number, newIndex: number) => void;
+    onOrderChanged: (oldIndex: number, newIndex: number) => any;
 }
 
 /**
