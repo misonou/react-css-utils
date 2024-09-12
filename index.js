@@ -2,8 +2,7 @@ import { useState } from "react";
 import $ from "jquery";
 import dom, { reportError } from "zeta-dom/dom";
 import { bind, containsOrEquals, getContentRect, getRect, isVisible, matchSelector, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
-import { always, createPrivateStore, definePrototype, each, either, extend, is, isPlainObject, makeArray, makeAsync, mapRemove, matchWord, matchWordMulti, setImmediate, setTimeout } from "zeta-dom/util";
-import { createAutoCleanupMap } from "zeta-dom/observe";
+import { always, combineFn, each, either, executeOnce, extend, is, isPlainObject, makeArray, makeAsync, matchWord, matchWordMulti, setImmediate, setTimeout } from "zeta-dom/util";
 import { useDispose } from "zeta-dom-react";
 
 const FLIP_POS = {
@@ -23,7 +22,6 @@ const PC = {
     0.5: '50%',
     1: '100%'
 };
-const _ = /*#__PURE__*/ createPrivateStore();
 
 var positionCallbacks;
 
@@ -383,74 +381,33 @@ export function initStickable(container) {
     };
 }
 
-export function Positioner(element, to, dir, options) {
-    _(this, {
-        element: element,
-        to: is(to, Node) || extend({}, to),
-        dir: dir,
-        options: extend({}, options),
-        callback: positionCallback(element, to, dir, options)
-    });
-}
-
-function connectPositioner(state) {
+export function startPositioning(element, to, dir, options) {
     if (!positionCallbacks) {
-        positionCallbacks = createAutoCleanupMap(function (i, v) {
-            disconnectPositioner(v);
-        });
+        positionCallbacks = new Map();
         bind(window.visualViewport || window, 'resize', function () {
             setTimeout(function () {
-                each(positionCallbacks, function (i, v) {
-                    v.callback();
-                });
+                combineFn(positionCallbacks)();
             }, 50);
         });
     }
-    var element = state.element;
-    var options = state.options;
     if (positionCallbacks.has(element)) {
-        disconnectPositioner(mapRemove(positionCallbacks, element));
+        throw new Error('Dismount previous positioning before mounting a new one');
     }
+    var observer;
+    var callback = positionCallback(element, to, dir, options);
+    var dispose = executeOnce(function () {
+        positionCallbacks.delete(element);
+        if (observer) {
+            observer.disconnect();
+        }
+    });
     if (options.within) {
-        var observer = state.observer || (state.observer = new ResizeObserver(function () {
-            state.callback();
-        }));
+        observer = new ResizeObserver(callback);
         observer.observe(options.within);
     }
-    positionCallbacks.set(element, state);
-    state.callback();
+    positionCallbacks.set(element, callback);
+    callback();
+    return dispose;
 }
 
-function disconnectPositioner(state) {
-    if (positionCallbacks && positionCallbacks.get(state.element) === state) {
-        positionCallbacks.delete(state.element);
-    }
-    if (state.observer) {
-        state.observer.disconnect();
-    }
-}
-
-definePrototype(Positioner, {
-    refresh: function () {
-        _(this).callback();
-    },
-    observe: function () {
-        connectPositioner(_(this));
-    },
-    disconnect: function () {
-        disconnectPositioner(_(this));
-    },
-    setOptions: function (dir, options) {
-        var state = _(this);
-        if (isPlainObject(dir)) {
-            options = dir;
-        } else {
-            state.dir = dir;
-        }
-        options = extend(state.options, options);
-        state.callback = positionCallback(state.element, state.to, state.dir, options);
-        if (positionCallbacks.get(state.element) === state) {
-            connectPositioner(state);
-        }
-    }
-});
+export * from "./Positioner.js";

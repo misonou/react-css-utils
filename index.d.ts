@@ -29,38 +29,15 @@ export function position(element: Element, to: PositionAnchor, dir: PositionAlig
  */
 export function position(element: Element, to: PositionAnchor, dir: PositionAlign, options?: PositionOptions): void;
 
-export class Positioner {
-    /**
-     * @see {@link position}
-     * @requires {@link ResizeObserver}
-     */
-    constructor(element: Element, to: PositionAnchor, dir: PositionAlign, options?: PositionOptions);
-
-    /**
-     * Triggers re-positioning manually.
-     */
-    refresh(): void;
-    /**
-     * Enables automatic re-positioning when viewport size or
-     * the bounding size of {@link PositionOptions.within} has changed.
-     */
-    observe(): void;
-    /**
-     * Disables automatic re-positioning.
-     */
-    disconnect(): void;
-    /**
-     * Updates position.
-     * @param options A dictionary specifying positioning options.
-     */
-    setOptions(options: PositionOptions): void;
-    /**
-     * Updates position.
-     * @param dir A space-delimited string specifying how element is aligned in x and y direction.
-     * @param options A dictionary specifying positioning options.
-     */
-    setOptions(dir: PositionAlign, options?: PositionOptions): void;
-}
+/**
+ * Places element in alignment to another element with auto re-positioning enabled.
+ * @param element Element to be placed. It must be styled with `position: absolute` or `position: fixed`.
+ * @param to A DOM element, a `Rect`-like object or a point with x and y coordinates, as the reference to where the element should be placed.
+ * @param dir A space-delimited string specifying how element is aligned in x and y direction.
+ * @param options A dictionary specifying extra options.
+ * @returns A callback that stops auto re-positioning.
+ */
+export function startPositioning(element: Element, to: PositionAnchor, dir: PositionAlign, options?: PositionOptions): Zeta.UnregisterCallback;
 
 export interface PositionOptions {
     /**
@@ -176,3 +153,5 @@ export interface Stickable {
  * @deprecated Add sticky element directly using `ScrollableMixin.setStickyPosition`
  */
 export function initStickable(container: HTMLElement): Stickable;
+
+export * from "./Positioner";
