@@ -353,7 +353,7 @@ export function initSortable(element, options) {
         always(promise, function (result) {
             if (result && newIndex !== curIndex) {
                 container.insertBefore(item, children[newIndex + +(newIndex > curIndex)] || lastBefore);
-                makeAsync(options.onOrderChanged)(curIndex, newIndex).catch(function () {
+                makeAsync(options.onOrderChanged)(curIndex, newIndex).catch(function (e) {
                     container.insertBefore(item, children[curIndex + 1] || lastBefore);
                     reportError(e, container);
                 });
