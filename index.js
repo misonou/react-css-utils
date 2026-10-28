@@ -1,7 +1,7 @@
 import { useState } from "react";
 import $ from "jquery";
 import dom, { reportError } from "zeta-dom/dom";
-import { bind, containsOrEquals, getContentRect, getRect, isVisible, matchSelector, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
+import { bind, containsOrEquals, getContentRect, getRect, getScrollParent, isVisible, matchSelector, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
 import { always, combineFn, each, either, executeOnce, extend, is, isPlainObject, makeArray, makeAsync, matchWord, matchWordMulti, setImmediate, setTimeout } from "zeta-dom/util";
 import { useDispose } from "zeta-dom-react";
 
@@ -111,6 +111,7 @@ function positionImpl(element, to, within, oDirX, oDirY, insetX, insetY, modeX, 
     });
     var inset = insetX && insetY;
     var winInset = inset || within ? 0 : 10;
+    var scrollParent = getScrollParent(element.parentElement);
     var curStyle = getComputedStyle(element);
     var elmRectWithMargin = getRect(element, 'margin-box');
     var elmRectPainted = getRect(element);
@@ -161,7 +162,7 @@ function positionImpl(element, to, within, oDirX, oDirY, insetX, insetY, modeX, 
         }
         parentRect = parentRect || getRect(dom.root);
 
-        var winRect = inset ? refRect.expand(margin, -1) : within ? getRect(within).expand(margin, -1) : intersectRect(getContentRect(dom.root).expand(margin, -1), getRect().expand(-winInset));
+        var winRect = inset ? refRect.expand(margin, -1) : within ? getRect(within).expand(margin, -1) : intersectRect(getContentRect(scrollParent).expand(margin, -1), getRect().expand(-winInset));
         var style = {
             transform: ''
         };
