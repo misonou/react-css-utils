@@ -69,7 +69,6 @@ function positionCallback(element, to, dir, within, offset) {
         offset = within.offset;
         within = within.within;
     }
-    offset = offset || 0;
 
     var modeX = options.axis === 'y-only' ? -1 : 0;
     var modeY = options.axis === 'x-only' ? -1 : 0;
@@ -94,7 +93,7 @@ function positionCallback(element, to, dir, within, offset) {
     }
     var insetX = modeX >= 0 && (oInset === 'inset' || (FLIP_POS[oDirY] && oInset === 'inset-x'));
     var insetY = modeY >= 0 && (oInset === 'inset' || (FLIP_POS[oDirX] && oInset === 'inset-y'));
-    return positionImpl.bind(undefined, element, to, within, oDirX, oDirY, insetX, insetY, modeX, modeY, offset || 0, scrollToFit, allowFlip, allowFit, minSize);
+    return positionImpl.bind(undefined, element, to, within, oDirX, oDirY, insetX, insetY, modeX, modeY, offset, scrollToFit, allowFlip, allowFit, minSize);
 }
 
 function positionImpl(element, to, within, oDirX, oDirY, insetX, insetY, modeX, modeY, offset, scrollToFit, allowFlip, allowFit, minSize) {
@@ -126,6 +125,9 @@ function positionImpl(element, to, within, oDirX, oDirY, insetX, insetY, modeX, 
         margin[v] = (elmRectWithMargin[v] - elmRect[v]) * DIR_SIGN[v];
         winMargin[v] = Math.max(margin[v], winInset);
     });
+    if (offset === undefined && is(to, Node)) {
+        offset = parseFloat(getComputedStyle(to).shapeMargin) || 0;
+    }
 
     var dirX, dirY;
     var calc = function (modeX, modeY, allowScroll) {
