@@ -1,7 +1,7 @@
 import { useState } from "react";
 import $ from "jquery";
 import dom, { reportError } from "zeta-dom/dom";
-import { bind, containsOrEquals, getContentRect, getRect, getScrollParent, isVisible, matchSelector, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
+import { bind, containsOrEquals, getContentRect, getRect, isVisible, matchSelector, removeNode, scrollIntoView, setClass, toPlainRect } from "zeta-dom/domUtil";
 import { always, combineFn, each, either, executeOnce, extend, is, isPlainObject, makeArray, makeAsync, matchWord, matchWordMulti, setImmediate, setTimeout } from "zeta-dom/util";
 import { useDispose } from "zeta-dom-react";
 
@@ -27,6 +27,16 @@ var positionCallbacks;
 
 function intersectRect(a, b) {
     return toPlainRect(Math.max(a.left, b.left), Math.max(a.top, b.top), Math.min(a.right, b.right), Math.min(a.bottom, b.bottom));
+}
+
+function getPositionParent(element) {
+    for (; element; element = element.parentElement) {
+        var style = getComputedStyle(element);
+        if (style.overflow !== 'visible') {
+            return element;
+        }
+    }
+    return dom.root;
 }
 
 function setStyle(style, dir, pos, parentRect, p, pSize, percentage) {
@@ -110,7 +120,7 @@ function positionImpl(element, to, within, oDirX, oDirY, insetX, insetY, modeX, 
     });
     var inset = insetX && insetY;
     var winInset = inset || within ? 0 : 10;
-    var scrollParent = getScrollParent(element.parentElement);
+    var scrollParent = getPositionParent(element.parentElement);
     var curStyle = getComputedStyle(element);
     var elmRectWithMargin = getRect(element, 'margin-box');
     var elmRectPainted = getRect(element);
